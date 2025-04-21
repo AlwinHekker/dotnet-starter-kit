@@ -44,6 +44,14 @@ public static class FshPermissions
         new("Delete Brands", FshActions.Delete, FshResources.Brands),
         new("Export Brands", FshActions.Export, FshResources.Brands),
 
+        //Features
+        new("View Features", FshActions.View, FshResources.Features, IsBasic: true),
+        new("Search Features", FshActions.Search, FshResources.Features, IsBasic: true),
+        new("Create Features", FshActions.Create, FshResources.Features),
+        new("Update Features", FshActions.Update, FshResources.Features),
+        new("Delete Features", FshActions.Delete, FshResources.Features),
+        new("Export Features", FshActions.Export, FshResources.Features),
+
         //todos
         new("View Todos", FshActions.View, FshResources.Todos, IsBasic: true),
         new("Search Todos", FshActions.Search, FshResources.Todos, IsBasic: true),

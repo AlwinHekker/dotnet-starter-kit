@@ -30,6 +30,13 @@ public static class CatalogModule
             brandGroup.MapGetBrandListEndpoint();
             brandGroup.MapBrandUpdateEndpoint();
             brandGroup.MapBrandDeleteEndpoint();
+
+            var featureGroup = app.MapGroup("features").WithTags("features");
+            featureGroup.MapFeatureCreationEndpoint();
+            featureGroup.MapGetFeatureEndpoint();
+            featureGroup.MapGetFeatureListEndpoint();
+            featureGroup.MapFeatureUpdateEndpoint();
+            featureGroup.MapFeatureDeleteEndpoint();
         }
     }
     public static WebApplicationBuilder RegisterCatalogServices(this WebApplicationBuilder builder)
@@ -41,6 +48,8 @@ public static class CatalogModule
         builder.Services.AddKeyedScoped<IReadRepository<Product>, CatalogRepository<Product>>("catalog:products");
         builder.Services.AddKeyedScoped<IRepository<Brand>, CatalogRepository<Brand>>("catalog:brands");
         builder.Services.AddKeyedScoped<IReadRepository<Brand>, CatalogRepository<Brand>>("catalog:brands");
+        builder.Services.AddKeyedScoped<IRepository<Feature>, CatalogRepository<Feature>>("catalog:features");
+        builder.Services.AddKeyedScoped<IReadRepository<Feature>, CatalogRepository<Feature>>("catalog:features");
         return builder;
     }
     public static WebApplication UseCatalogModule(this WebApplication app)

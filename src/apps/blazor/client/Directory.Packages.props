@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Mapster" Version="7.4.0" />
+    <PackageVersion Include="NRules" Version="1.0.2" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.6.0.109712" />
     <PackageVersion Include="MediatR" Version="12.4.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.2" />

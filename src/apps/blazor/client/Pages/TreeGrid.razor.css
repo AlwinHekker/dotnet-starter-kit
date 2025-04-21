@@ -1,0 +1,13 @@
+﻿/* TreeGrid.razor.css */
+.tree-node {
+    padding: 6px 12px;
+    margin: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    cursor: grab;
+}
+
+.tree-children {
+    margin-left: 20px;
+}

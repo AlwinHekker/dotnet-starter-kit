@@ -1,0 +1,213 @@
+﻿@page "/TreeGrid"
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div id="tree-container">
+    @foreach (var item in Items)
+    {
+        <div class="tree-node" id="item-@item.Id" data-id="@item.Id" data-parent-id="@item.Id">
+            <div class="node-header" @ref="itemNodeRefs[item.Id]">
+                <span class="drag-handle">☰</span>
+                <strong>@item.Name</strong>
+            </div>
+
+            @if (item.Children?.Any() == true)
+            {
+                <div class="tree-children" id="children-@item.Id" data-id="@item.Id">
+                    @foreach (var child in item.Children)
+                    {
+                        <div class="tree-node" id="item-@child.Id" data-id="@child.Id">
+                            <div class="node-header">
+                                <span class="drag-handle">☰</span>
+                                @child.Name
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="tree-children empty" id="children-@item.Id" data-id="@item.Id">
+                    <div class="placeholder">Drop items here</div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (ShowConfirmation)
+{
+    <div class="modal-overlay">
+        <div class="modal">
+            <p>Confirm move of item <strong>@DraggedItemId</strong> to parent <strong>@NewParentId</strong>?</p>
+            <button @onclick="ConfirmMove">Yes</button>
+            <button @onclick="CancelMove">Cancel</button>
+        </div>
+    </div>
+}
+
+<!-- Data Table to Show the Tree Model -->
+<h3>Data Model (Real-Time)</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Parent ID</th>
+            <th>Child ID</th>
+            <th>Child Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var parent in Items)
+        {
+            @foreach (var child in parent.Children)
+            {
+                <tr>
+                    <td>@parent.Id</td>
+                    <td>@child.Id</td>
+                    <td>@child.Name</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    private DotNetObjectReference<TreeGrid>? dotNetRef;
+    private string DraggedItemId = "";
+    private string NewParentId = "";
+    private int NewIndex = 0;
+    private bool ShowConfirmation = false;
+    private Dictionary<string, ElementReference> itemNodeRefs = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initSortable", dotNetRef); // Initialize Sortable.js
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnItemDropped(string itemId, string newParentId, int newIndex)
+    {
+        // Pass the details of the drop action to Blazor
+        DraggedItemId = itemId;
+        NewParentId = newParentId;
+        NewIndex = newIndex;
+
+        ShowConfirmation = true; // Show confirmation modal
+        StateHasChanged(); // Force re-rendering to show updated state
+    }
+
+    private void ConfirmMove()
+    {
+        // Update data model based on drop action
+        var draggedItem = FindItemById(Items, DraggedItemId);
+        var newParent = FindNode(Items, NewParentId);
+
+        if (draggedItem != null && newParent != null)
+        {
+            // Remove the dragged item from its original parent (if exists)
+            RemoveItemFromParent(Items, draggedItem);
+
+            // Add the dragged item to the new parent at the correct index
+            newParent.Children.Insert(NewIndex, draggedItem);
+
+            // Handle empty parent after the move
+            if (!newParent.Children.Any())
+            {
+                newParent.Children.Add(new TreeNode { Id = "empty", Name = "Empty" });
+            }
+        }
+        else
+        {
+            // Handle error if the draggedItem or newParent is null
+            Console.Error.WriteLine("Error: Could not find dragged item or new parent.");
+        }
+
+        // Close confirmation modal and update UI
+        ShowConfirmation = false;
+        StateHasChanged(); // Re-render to reflect updated tree
+
+        // Reinitialize Sortable.js after move
+        ReinitializeSortable();
+    }
+
+    private void CancelMove()
+    {
+        ShowConfirmation = false;
+    }
+
+    // Helper: Find a node by ID in the tree
+    private TreeNode? FindNode(List<TreeNode> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id) return node;
+            var child = FindNode(node.Children, id);
+            if (child != null) return child;
+        }
+        return null;
+    }
+
+    // Helper: Find an item by ID (handles both root and child nodes)
+    private TreeNode? FindItemById(List<TreeNode> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id) return node;
+
+            var match = node.Children.FirstOrDefault(x => x.Id == id);
+            if (match != null) return match;
+
+            var deeper = FindItemById(node.Children, id);
+            if (deeper != null) return deeper;
+        }
+        return null;
+    }
+
+    // Helper: Remove an item from its parent's children list
+    private void RemoveItemFromParent(List<TreeNode> nodes, TreeNode itemToRemove)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Children.Remove(itemToRemove)) return;
+            RemoveItemFromParent(node.Children, itemToRemove);
+        }
+    }
+
+    // Reinitialize Sortable.js after the move
+    private async Task ReinitializeSortable()
+    {
+        await JS.InvokeVoidAsync("initSortable", dotNetRef);
+    }
+
+    // Dispose to clean up JS references
+    public async ValueTask DisposeAsync()
+    {
+        dotNetRef?.Dispose();
+    }
+
+    // Data Model: TreeNode class
+    public class TreeNode
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public List<TreeNode> Children { get; set; } = new();
+    }
+
+    // Initial Data Model
+    public List<TreeNode> Items { get; set; } = new()
+    {
+        new TreeNode { Id = "1", Name = "Parent 1", Children = new List<TreeNode>
+        {
+            new TreeNode { Id = "1.1", Name = "Child 1" },
+            new TreeNode { Id = "1.2", Name = "Child 2" }
+        }},
+        new TreeNode { Id = "2", Name = "Parent 2", Children = new List<TreeNode>
+        {
+            new TreeNode { Id = "2.1", Name = "Child 3" }
+        }},
+    };
+}

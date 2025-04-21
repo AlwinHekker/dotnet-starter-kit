@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FSH.Starter.WebApi.Catalog.Application.Brands.EventHandlers;
 
-public class BrandCreatedEventHandler(ILogger<BrandCreatedEventHandler> logger) : INotificationHandler<BrandCreated>
+public class FeatureCreatedEventHandler(ILogger<FeatureCreatedEventHandler> logger) : INotificationHandler<BrandCreated>
 {
     public async Task Handle(BrandCreated notification,
         CancellationToken cancellationToken)

@@ -18,7 +18,7 @@ namespace FSH.Starter.WebApi.Migrations.PostgreSQL.Catalog
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("catalog")
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -68,13 +68,10 @@ namespace FSH.Starter.WebApi.Migrations.PostgreSQL.Catalog
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Product", b =>
+            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Feature", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("BrandId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("Created")
@@ -104,13 +101,110 @@ namespace FSH.Starter.WebApi.Migrations.PostgreSQL.Catalog
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
+                    b.Property<Guid?>("ParentFeatureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentFeatureId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Features", "catalog");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BrandId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("Deleted")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsConfigurable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInStock")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsNewArrival")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOnSale")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVisibleIndividually")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MetaDescription")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaKeywords")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaTitle")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ProductFamily")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidTo")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -121,6 +215,21 @@ namespace FSH.Starter.WebApi.Migrations.PostgreSQL.Catalog
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Feature", b =>
+                {
+                    b.HasOne("FSH.Starter.WebApi.Catalog.Domain.Feature", "ParentFeature")
+                        .WithMany("ChildFeatures")
+                        .HasForeignKey("ParentFeatureId");
+
+                    b.HasOne("FSH.Starter.WebApi.Catalog.Domain.Product", null)
+                        .WithMany("Features")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParentFeature");
+                });
+
             modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Product", b =>
                 {
                     b.HasOne("FSH.Starter.WebApi.Catalog.Domain.Brand", "Brand")
@@ -128,6 +237,16 @@ namespace FSH.Starter.WebApi.Migrations.PostgreSQL.Catalog
                         .HasForeignKey("BrandId");
 
                     b.Navigation("Brand");
+                });
+
+            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Feature", b =>
+                {
+                    b.Navigation("ChildFeatures");
+                });
+
+            modelBuilder.Entity("FSH.Starter.WebApi.Catalog.Domain.Product", b =>
+                {
+                    b.Navigation("Features");
                 });
 #pragma warning restore 612, 618
         }

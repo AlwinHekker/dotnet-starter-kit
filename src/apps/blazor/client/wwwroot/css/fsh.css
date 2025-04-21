@@ -5,3 +5,74 @@
 .mud-list {
     border: 1px solid var(--mud-palette-lines-default)
 }
+/* TreeGrid.razor.css */
+.tree-node {
+    padding: 6px 12px;
+    margin: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    cursor: default;
+    transition: background 0.2s ease-in-out;
+}
+
+    .tree-node:hover {
+        background-color: #eef;
+    }
+
+.tree-children {
+    margin-left: 20px;
+}
+
+    .tree-children.empty {
+        padding: 6px;
+        border: 1px dashed #aaa;
+        min-height: 30px;
+    }
+
+.placeholder {
+    font-style: italic;
+    color: #aaa;
+}
+
+.drag-handle {
+    cursor: grab;
+    margin-right: 8px;
+    user-select: none; /* Disable text selection */
+}
+
+.sortable-ghost {
+    opacity: 0.5;
+    background: #ddd;
+}
+
+.node-header {
+    display: flex;
+    align-items: center;
+}
+
+/* Modal styles */
+ul.sortable {
+    list-style-type: none;
+    padding-left: 1rem;
+}
+
+li {
+    margin-bottom: 4px;
+}
+
+.drag-handle {
+    background-color: #f3f3f3;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: grab;
+    user-select: none;
+}
+
+/* configurator */
+.invalid-option {
+    color: gray;
+    font-style: italic;
+    opacity: 0.6;
+}

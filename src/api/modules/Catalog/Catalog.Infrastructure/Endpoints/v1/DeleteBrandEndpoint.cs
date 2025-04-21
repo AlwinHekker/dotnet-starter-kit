@@ -13,7 +13,7 @@ public static class DeleteBrandEndpoint
         return endpoints
             .MapDelete("/{id:guid}", async (Guid id, ISender mediator) =>
              {
-                 await mediator.Send(new DeleteBrandCommand(id));
+                 await mediator.Send(new DeleteFeatureCommand(id));
                  return Results.NoContent();
              })
             .WithName(nameof(DeleteBrandEndpoint))

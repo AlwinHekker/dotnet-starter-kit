@@ -1,0 +1,193 @@
+﻿@page "/configurator"
+
+<MudTabs>
+    <MudTabPanel Text="Configuration">
+        <MudAlert Severity="Severity.Warning" Elevation="0" Dense="true" Style="margin-bottom: 20px;" Visible="@IsConflictMessageVisible">
+            @ProductConfig.ConflictMessage
+        </MudAlert>
+
+        @foreach (var property in ProductConfig.GetType().GetProperties())
+        {
+            if (DropdownOptions.ContainsKey(property.Name))
+            {
+                <MudItem>
+                    <MudSelect T="string" Label="@property.Name" Value="@GetPropertyValue(property.Name)" ValueChanged="(value) => HandleDropdownChange(property.Name, value)" ValueExpression="() => GetPropertyValue(property.Name)">
+                        @foreach (var option in DropdownOptions[property.Name])
+                        {
+                            <MudSelectItem T="string" Value="@option" Class="@GetOptionClass(property.Name, option)">
+                                @option
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            }
+        }
+    </MudTabPanel>
+
+    <MudTabPanel Text="Summary">
+        <MudPaper Elevation="1" Class="p-4">
+            <h5>🔧 Current Configuration</h5>
+            @foreach (var property in ProductConfig.GetType().GetProperties())
+            {
+                <p><strong>@property.Name:</strong> @GetPropertyValue(property.Name)</p>
+            }
+        </MudPaper>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private bool IsConflictMessageVisible => !string.IsNullOrEmpty(ProductConfig.ConflictMessage);
+
+    public class ProductConfiguration
+    {
+        public string Engine { get; set; }
+        public string Gearbox { get; set; }
+        public string Material { get; set; }
+        public string Color { get; set; }
+        public string Wheels { get; set; }
+        public string Seats { get; set; }
+        public string Infotainment { get; set; }
+        public string SafetyFeatures { get; set; }
+        public string Lights { get; set; }
+        public string ConflictMessage { get; set; }
+    }
+
+    public class RuleEngineService
+    {
+        private readonly List<Rule> _rules;
+
+        public RuleEngineService()
+        {
+            _rules = new List<Rule>
+            {
+                new Rule
+                {
+                    ConditionAttribute = "Engine",
+                    ConditionValue = "Electric",
+                    TargetAttribute = "Gearbox",
+                    TargetValue = "Automatic",
+                    ConflictMessage = "Gearbox changed to 'Automatic' because the engine is 'Electric'."
+                },
+                new Rule
+                {
+                    ConditionAttribute = "Seats",
+                    ConditionValue = "Sport",
+                    TargetAttribute = "Wheels",
+                    TargetValue = "Sport",
+                    ConflictMessage = "Sport wheels selected because sport seats are chosen."
+                },
+                new Rule
+                {
+                    ConditionAttribute = "SafetyFeatures",
+                    ConditionValue = "Autonomous Driving",
+                    TargetAttribute = "Lights",
+                    TargetValue = "Matrix",
+                    ConflictMessage = "Matrix lights selected because autonomous driving is enabled."
+                }
+            };
+        }
+
+        public void ExecuteRules(ProductConfiguration config)
+        {
+            foreach (var rule in _rules)
+            {
+                if (GetPropertyValue(config, rule.ConditionAttribute) == rule.ConditionValue)
+                {
+                    SetPropertyValue(config, rule.TargetAttribute, rule.TargetValue);
+                    config.ConflictMessage = rule.ConflictMessage;
+                }
+            }
+        }
+
+        private string GetPropertyValue(ProductConfiguration config, string propertyName)
+        {
+            var property = config.GetType().GetProperty(propertyName);
+            return property?.GetValue(config)?.ToString();
+        }
+
+        private void SetPropertyValue(ProductConfiguration config, string propertyName, string value)
+        {
+            var property = config.GetType().GetProperty(propertyName);
+            if (property != null && property.CanWrite)
+            {
+                property.SetValue(config, value);
+            }
+        }
+    }
+
+    public class Rule
+    {
+        public string ConditionAttribute { get; set; }
+        public string ConditionValue { get; set; }
+        public string TargetAttribute { get; set; }
+        public string TargetValue { get; set; }
+        public string ConflictMessage { get; set; }
+    }
+
+    private ProductConfiguration ProductConfig = new()
+        {
+            Engine = "Gasoline",
+            Gearbox = "Manual",
+            Material = "Steel",
+            Color = "Red",
+            Wheels = "Standard",
+            Seats = "Fabric",
+            Infotainment = "Basic",
+            SafetyFeatures = "Standard",
+            Lights = "Halogen"
+        };
+
+    private RuleEngineService RuleEngine = new();
+
+    private Dictionary<string, List<string>> DropdownOptions = new()
+    {
+        { "Engine", new List<string> { "Gasoline", "Electric", "Diesel", "Hybrid" } },
+        { "Gearbox", new List<string> { "Manual", "Automatic", "CVT", "Dual-Clutch" } },
+        { "Material", new List<string> { "Steel", "Carbon Fiber", "Aluminum", "Plastic" } },
+        { "Color", new List<string> { "Red", "Blue", "Black", "White", "Silver" } },
+        { "Wheels", new List<string> { "Standard", "Alloy", "Sport", "Off-Road" } },
+        { "Seats", new List<string> { "Fabric", "Leather", "Sport", "Heated" } },
+        { "Infotainment", new List<string> { "Basic", "Premium", "Surround Sound", "Touchscreen" } },
+        { "SafetyFeatures", new List<string> { "Standard", "Advanced", "Autonomous Driving", "Lane Assist" } },
+        { "Lights", new List<string> { "Halogen", "LED", "Matrix", "Laser" } }
+    };
+
+    private void HandleConfigurationChange()
+    {
+        ProductConfig.ConflictMessage = string.Empty; // Clear previous messages
+        RuleEngine.ExecuteRules(ProductConfig); // Apply rules
+        StateHasChanged(); // Update the UI
+    }
+
+    private string GetPropertyValue(string propertyName)
+    {
+        var property = ProductConfig.GetType().GetProperty(propertyName);
+        return property?.GetValue(ProductConfig)?.ToString();
+    }
+
+    private void HandleDropdownChange(string propertyName, string value)
+    {
+        var property = ProductConfig.GetType().GetProperty(propertyName);
+        if (property != null && property.CanWrite)
+        {
+            property.SetValue(ProductConfig, value);
+        }
+
+        HandleConfigurationChange(); // Re-evaluate rules after the change
+    }
+
+    private bool IsOptionValid(string propertyName, string option)
+    {
+        if (propertyName == "Gearbox" && option == "Manual" && ProductConfig.Engine == "Electric")
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private string GetOptionClass(string propertyName, string option)
+    {
+        return !IsOptionValid(propertyName, option) ? "invalid-option" : string.Empty;
+    }
+}

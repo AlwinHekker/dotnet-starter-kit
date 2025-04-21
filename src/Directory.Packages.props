@@ -93,4 +93,8 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.11.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.0" />
   </ItemGroup>
+  <ItemGroup Label="codegen">
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+  </ItemGroup>
 </Project>

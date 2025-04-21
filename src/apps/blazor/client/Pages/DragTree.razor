@@ -1,0 +1,103 @@
+﻿@page "/DragTree"
+@using System.Text.Json
+@inject IJSRuntime JS
+
+<div id="tree-root" @ref="treeRoot">
+    @RenderTree(Items)
+</div>
+<div>test @JsonSerializer.Serialize(Items, new JsonSerializerOptions { WriteIndented = true })
+</div>
+
+@code {
+    public class TreeItem
+    {
+        public string Id { get; set; } // Do NOT regenerate this per render
+        public string Title { get; set; }
+        public List<TreeItem> Children { get; set; } = new();
+    }
+
+    private ElementReference treeRoot;
+
+    public List<TreeItem> Items { get; set; } = new()
+    {
+        new() { Id = "1", Title = "Parent 1", Children = new() {
+            new() { Id = "1-1", Title = "Child 1.1" },
+            new() { Id = "1-2", Title = "Child 1.2" }
+        }},
+        new() { Id = "2", Title = "Parent 2", Children = new() {
+            new() { Id = "2-1", Title = "Child 2.1", Children = new() {
+                new() { Id = "2-1-1", Title = "Grandchild 2.1.1" }
+            }}
+        }}
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Console.WriteLine("🧩 Initializing drag-drop via JS...");
+            await JS.InvokeVoidAsync("treeDragDrop.init", treeRoot, DotNetObjectReference.Create(this));
+        }
+    }
+
+    private RenderFragment RenderTree(List<TreeItem> items) => builder =>
+    {
+        int seq = 0;
+        builder.OpenElement(seq++, "ul");
+        builder.AddAttribute(seq++, "class", "sortable");
+
+        foreach (var item in items)
+        {
+            builder.OpenElement(seq++, "li");
+            builder.AddAttribute(seq++, "data-id", item.Id);
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "drag-handle");
+            builder.AddContent(seq++, item.Title);
+            builder.CloseElement(); // div
+
+            if (item.Children.Any())
+            {
+                builder.AddContent(seq++, RenderTree(item.Children));
+            }
+
+            builder.CloseElement(); // li
+        }
+
+        builder.CloseElement(); // ul
+    };
+
+    [JSInvokable]
+    public async Task OnTreeUpdated(string json)
+    {
+        Console.WriteLine("📥 Blazor: Received tree JSON from JS:");
+        Console.WriteLine(json);
+
+        try
+        {
+            var updatedTree = JsonSerializer.Deserialize<List<TreeItem>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+              
+
+            if (updatedTree == null)
+            {
+                Console.WriteLine("❌ Deserialization resulted in null.");
+                return;
+            }
+
+            Console.WriteLine("✅ Deserialization succeeded. Tree structure:");
+            Console.WriteLine(JsonSerializer.Serialize(updatedTree, new JsonSerializerOptions { WriteIndented = true }));
+            
+            Items = updatedTree;
+            StateHasChanged();
+
+            Console.WriteLine("✅ Tree items updated and rerendered.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Deserialization error: {ex.Message}");
+        }
+    }
+}

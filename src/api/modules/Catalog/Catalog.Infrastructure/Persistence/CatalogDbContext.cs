@@ -19,6 +19,7 @@ public sealed class CatalogDbContext : FshDbContext
 
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<Brand> Brands { get; set; } = null!;
+    public DbSet<Feature> Features { get; set; } = null!; // Add this line
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

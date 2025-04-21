@@ -6,12 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FSH.Starter.WebApi.Catalog.Application.Brands.Delete.v1;
-public sealed class DeleteBrandHandler(
-    ILogger<DeleteBrandHandler> logger,
+public sealed class DeleteFeatureHandler(
+    ILogger<DeleteFeatureHandler> logger,
     [FromKeyedServices("catalog:brands")] IRepository<Brand> repository)
-    : IRequestHandler<DeleteBrandCommand>
+    : IRequestHandler<DeleteFeatureCommand>
 {
-    public async Task Handle(DeleteBrandCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteFeatureCommand request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         var brand = await repository.GetByIdAsync(request.Id, cancellationToken);

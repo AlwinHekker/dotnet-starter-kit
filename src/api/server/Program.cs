@@ -3,10 +3,13 @@ using FSH.Framework.Infrastructure.Logging.Serilog;
 using FSH.Starter.WebApi.Host;
 using Serilog;
 
+using Generated;
+
 StaticLogger.EnsureInitialized();
 Log.Information("server booting up..");
 try
 {
+    var test = Order.Hello();
     var builder = WebApplication.CreateBuilder(args);
     builder.ConfigureFshFramework();
     builder.RegisterModules();

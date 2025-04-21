@@ -1,0 +1,185 @@
+﻿@page "/rulebuildercopy"
+
+<h3>🧠 Rule Builder</h3>
+
+@foreach (var block in RuleBlocks.OrderBy(b => b.Order))
+{
+    <div class="flex gap-2 mb-2">
+        <input type="number" min="0" style="width: 40px;" @bind="block.OpenBracketCount" />
+
+        <select @bind="block.LeftAttributeKey">
+            @foreach (var attr in Attributes)
+            {
+                <option value="@attr">@attr</option>
+            }
+        </select>
+
+        <select @bind="block.Operator">
+            <option>==</option>
+            <option>!=</option>
+            <option>>=</option>
+            <option>&lt;=</option>
+        </select>
+
+        <input @bind="block.RightValue" placeholder="Value" style="width: 100px;" />
+
+        <input type="number" min="0" style="width: 40px;" @bind="block.CloseBracketCount" />
+
+        @if (block != RuleBlocks.Last())
+        {
+            <select @bind="block.LogicalConnector">
+                <option>AND</option>
+                <option>OR</option>
+            </select>
+        }
+
+        <button class="btn btn-danger" @onclick="@(() => RemoveBlock(block))">🗑️</button>
+    </div>
+
+    <div id="blocklyDiv" style="height: 400px; width: 100%; border: 1px solid #ccc;"></div>
+    <button class="btn btn-success" @onclick="GenerateBlocklyRule">✅ Generate Rule from Blockly</button>
+    <xml id="toolbox" style="display: none">
+        <category name="Logic" colour="210">
+            <block type="logic_compare"></block>
+            <block type="logic_operation"></block>
+            <block type="logic_boolean"></block>
+        </category>
+        <category name="Variables" custom="VARIABLE" colour="330"></category>
+    </xml>
+}
+
+<button class="btn btn-primary" @onclick="AddBlock">➕ Add Rule</button>
+
+@if (!string.IsNullOrWhiteSpace(BracketError))
+{
+    <p style="color:red">@BracketError</p>
+}
+
+<h5>🔍 Live Rule Expression:</h5>
+<p>@PreviewExpression</p>
+
+@code {
+    // 👇 You can define the class right here!
+    public class RuleBlock
+    {
+        public int Id { get; set; }
+        public int Order { get; set; }
+
+        public string LeftAttributeKey { get; set; }
+        public string Operator { get; set; }
+        public string RightValue { get; set; }
+
+        public int OpenBracketCount { get; set; }
+        public int CloseBracketCount { get; set; }
+
+        public string LogicalConnector { get; set; } // AND / OR
+    }
+
+    public class AttributeDefinition
+    {
+        public string Name { get; set; }
+        public List<string> Values { get; set; }
+    }
+
+    List<AttributeDefinition> Attributes = new()
+{
+    new() { Name = "CPU", Values = new() { "i5", "i7", "i9" } },
+    new() { Name = "RAM", Values = new() { "8", "16", "32" } },
+    new() { Name = "OS", Values = new() { "Windows", "Linux" } }
+};
+
+    List<RuleBlock> RuleBlocks = new();
+ 
+    string BracketError;
+
+    protected override void OnInitialized()
+    {
+        AddBlock();
+    }
+
+    void AddBlock()
+    {
+        RuleBlocks.Add(new RuleBlock
+        {
+            Id = RuleBlocks.Count + 1,
+            Order = RuleBlocks.Count + 1,
+            Operator = "=="
+        });
+        Validate();
+    }
+
+    void RemoveBlock(RuleBlock block)
+    {
+        RuleBlocks.Remove(block);
+        Validate();
+    }
+
+    string PreviewExpression => BuildRuleExpression(RuleBlocks);
+
+    void Validate()
+    {
+        if (!ValidateBrackets(RuleBlocks, out var error))
+            BracketError = error;
+        else
+            BracketError = null;
+    }
+
+    string BuildRuleExpression(List<RuleBlock> blocks)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var block in blocks.OrderBy(b => b.Order))
+        {
+            sb.Append(new string('(', block.OpenBracketCount));
+            sb.Append($"{block.LeftAttributeKey} {block.Operator} \"{block.RightValue}\"");
+            sb.Append(new string(')', block.CloseBracketCount));
+
+            if (!string.IsNullOrWhiteSpace(block.LogicalConnector))
+            {
+                sb.Append($" {block.LogicalConnector} ");
+            }
+        }
+        return sb.ToString();
+    }
+
+    bool ValidateBrackets(List<RuleBlock> blocks, out string error)
+    {
+        int balance = 0;
+        foreach (var block in blocks.OrderBy(b => b.Order))
+        {
+            balance += block.OpenBracketCount;
+            balance -= block.CloseBracketCount;
+
+            if (balance < 0)
+            {
+                error = $"Too many closing brackets at condition #{block.Order}";
+                return false;
+            }
+        }
+
+        error = balance != 0 ? "Unbalanced brackets in the rule." : null;
+        return balance == 0;
+    }
+
+    @inject IJSRuntime JS
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("blocklyInterop.init");
+        }
+    }
+
+    async Task GenerateBlocklyRule()
+    {
+        await JS.InvokeVoidAsync("blocklyInterop.getRuleCode");
+    }
+
+    [JSInvokable]
+    public static Task SetRuleExpression(string rule)
+    {
+        Console.WriteLine("Generated Blockly Rule: " + rule);
+        // TODO: Store or transform into RuleBlocks
+        return Task.CompletedTask;
+    }
+}
